@@ -82,16 +82,19 @@ Homepage: http://www.oracle.com/
 END
 if [ "$java" == "jdk" ]; then
 cat << END >> $dirName/DEBIAN/control
+Replaces: oracle-jre${version}, oracle-server-jre${version}
 Description: Java SE Development Kit(JDK)
  For Java Developers. Includes a complete JRE plus tools for developing, debugging, and monitoring Java applications.
 END
 elif [ "$java" == "jre" ]; then
 cat << END >> $dirName/DEBIAN/control
+Conflicts: oracle-jdk${version}, oracle-server-jre${version}
 Description: Java Runtime Environment(JRE)
  Covers most end-users needs. Contains everything required to run Java applications on your system.
 END
 else
 cat << END >> $dirName/DEBIAN/control
+Conflicts: oracle-jdk${version}, oracle-jre${version}
 Description: Server Java Runtime Environment(Server JRE)
  For deploying Java applications on servers. Includes tools for JVM monitoring and tools commonly required for server applications, but does not include browser integration (the Java plug-in), auto-update, nor an installer.
 END
@@ -223,9 +226,11 @@ echo -e "done.\n"
 chmod +x $dirName/DEBIAN/*
 
 echo  "${bold}Phase3: making ${dirName}.deb,${normal} this may take a whilst... "
-sudo dpkg-deb --build $dirName || { echo exit; exit 2; }
+sudo dpkg-deb --build $dirName > /dev/null 
+[ $? -eq 0 ] || { echo "exit"; exit 2; }
 sudo chown $(id -un):$(id -gn) $dirName.deb
 sudo rm -r $dirName
 
 echo "${bold}$dirName.deb ${normal}has been done."
+
 exit 0
