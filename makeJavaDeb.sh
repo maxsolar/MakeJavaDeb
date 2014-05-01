@@ -90,7 +90,7 @@ Homepage: http://www.oracle.com/
 END
 if [ "$java" == "jdk" ]; then
 cat << END >> $dirName/DEBIAN/control
-Provides: java-compiler, java-sdk, java2-sdk, java5-sdk, java6-sdk, java7-jdk
+Provides: java-compiler, java-sdk, java2-sdk, java5-sdk, java6-sdk, java7-jdk, java-runtime, java2-runtime, java5-runtime, java6-runtime, java7-runtime
 Replaces: oracle-jre${version}, oracle-server-jre${version}
 Description: Java SE Development Kit(JDK)
  For Java Developers. Includes a complete JRE plus tools for developing, debugging, and monitoring Java applications.

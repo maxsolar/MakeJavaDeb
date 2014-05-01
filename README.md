@@ -2,7 +2,7 @@ MakeJavaDeb
 ===========
 
 Scripts to make an installable deb from a tarball downloaded from Oracle. 
-The repo is aiming to make an installable deb from a tarball downloaded from Oracle website. Format before and after transformed is like:
+The repo is aiming to make an installable deb. Format before and after transformed is like:
 
 jdk-7u51-linux-x64.tar.gz       -- > oracle-jdk_1.7.0_51_amd64.deb
 
@@ -20,3 +20,4 @@ Features
 
   c) No confliction with OpenJDK.
 
+  d) Not compatiable for JDK/JRE 1.6 and earlier.
