@@ -40,16 +40,18 @@ shortVersion=$(echo $file | awk -F'-' '{print $(NF-2)}')
 java=$(echo $file | awk -F"-$shortVersion" '{print $1}')
 version=$(echo $shortVersion | awk -F'u' '{print $1}')
 if [ ${version} == "7" ]; then
-   priority=1055
+   priority=1077
 else
-   priority=1066
+   priority=1088
 fi
 release=$(echo $shortVersion | awk -F'u' '{print $2}')
 ARCH=$(echo $file | awk -F'-' '{print $NF}'| sed 's/.tar.gz//')
 if [ "$ARCH" == "x64" ]; then
 	arch="amd64"
+	multiarch=x86_64-linux-gnu
 else
 	arch="i586"
+	multiarch=i386-linux-gnu
 fi
 dirName="oracle-${java}_1.${version}.0_${release}_${arch}"
 dataDir=$(tar -tf $filename | head -n1|awk -F/ '{print $1}')
@@ -83,10 +85,12 @@ Depends: libc6 (>= 2.2.5)
 Recommends: libxt-dev
 Section: java
 Priority: optional
+Multi-Arch: same
 Homepage: http://www.oracle.com/
 END
 if [ "$java" == "jdk" ]; then
 cat << END >> $dirName/DEBIAN/control
+Provides: java-compiler, java-sdk, java2-sdk, java5-sdk, java6-sdk, java7-jdk
 Replaces: oracle-jre${version}, oracle-server-jre${version}
 Description: Java SE Development Kit(JDK)
  For Java Developers. Includes a complete JRE plus tools for developing, debugging, and monitoring Java applications.
@@ -94,12 +98,14 @@ END
 elif [ "$java" == "jre" ]; then
 cat << END >> $dirName/DEBIAN/control
 Conflicts: oracle-jdk${version}, oracle-server-jre${version}
+Provides: java-runtime, java2-runtime, java5-runtime, java6-runtime, java7-runtime
 Description: Java Runtime Environment(JRE)
  Covers most end-users needs. Contains everything required to run Java applications on your system.
 END
 else
 cat << END >> $dirName/DEBIAN/control
 Conflicts: oracle-jdk${version}, oracle-jre${version}
+Provides: java-runtime, java2-runtime, java5-runtime, java6-runtime, java7-runtime
 Description: Server Java Runtime Environment(Server JRE)
  For deploying Java applications on servers. Includes tools for JVM monitoring and tools commonly required for server applications, but does not include browser integration (the Java plug-in), auto-update, nor an installer.
 END
@@ -111,6 +117,7 @@ cat << END > $dirName/DEBIAN/postinst
 
 set -e
 
+multiarch=$multiarch
 priority=$priority
 basedir=/usr/lib/jvm/$dataDir
 mandir=\$basedir/man
