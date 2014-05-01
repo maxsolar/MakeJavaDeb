@@ -13,17 +13,16 @@
 ## file reader ##
 #################
 if [ "$1" == "" ]; then
-	read -p "please specify absolute path for the jre/jdk tarball: " file
-	file=$file
+	read -p "please specify path to the jre/jdk tarball: " filename
+	filename=$filename
 else
-	file=$1
+	filename=$1
 fi
+echo $filename | grep "tar.gz" >/dev/null 2>&1
+[ $? -eq 0 ] || { echo "suffix must be in tar.gz. exit now."; exit 2; }
 
-if [ $(echo $file | grep "tar.gz") == "" -o \
-	$(file --mime-type -b $file | grep gzip) == "" ]; then
-	echo "file suffix or mime type invalid. exit now."
-	exit 2
-fi
+file --mime-type -b $filename | grep gzip >/dev/null 2>&1
+[ $? -eq 0 ] || { echo "MIME type must be in gzip. exit now."; exit 2; }
 ##################
 ## bold setting ##
 ##################
@@ -36,9 +35,15 @@ normal=`tput sgr0`
 ## jdk-7u51-linux-x64.tar.gz -- > oracle-jdk_1.7.0_51_amd64.deb
 ## jre-8u5-linux-x64.tar.gz -- > oracle-jre_1.8.0_5_amd64.deb
 ## server-jre-8u5-linux-x64.tar.gz -- > oracle-server-jre_1.8.0_5_amd64.deb
+file=$(basename $filename)
 shortVersion=$(echo $file | awk -F'-' '{print $(NF-2)}')
 java=$(echo $file | awk -F"-$shortVersion" '{print $1}')
 version=$(echo $shortVersion | awk -F'u' '{print $1}')
+if [ ${version} == "7" ]; then
+   priority=1055
+else
+   priority=1066
+fi
 release=$(echo $shortVersion | awk -F'u' '{print $2}')
 ARCH=$(echo $file | awk -F'-' '{print $NF}'| sed 's/.tar.gz//')
 if [ "$ARCH" == "x64" ]; then
@@ -47,7 +52,7 @@ else
 	arch="i586"
 fi
 dirName="oracle-${java}_1.${version}.0_${release}_${arch}"
-dataDir=$(tar -tf $file | head -n1|awk -F/ '{print $1}')
+dataDir=$(tar -tf $filename | head -n1|awk -F/ '{print $1}')
 #################
 ## preparation ##
 #################
@@ -63,7 +68,7 @@ dataDir=$(tar -tf $file | head -n1|awk -F/ '{print $1}')
 ####################################
 echo -n "${bold}Phase1: copying files...${normal}"
 mkdir -p $dirName/usr/lib/jvm
-tar zxf $file -C $dirName/usr/lib/jvm
+tar zxf $filename -C $dirName/usr/lib/jvm
 echo -e "done.\n"
 ## refer2: http://stackoverflow.com/questions/1251999/sed-how-can-i-replace-a-newline-n
 #jdktools=$(find $dirName/usr/lib/jvm/${java}1.${version}.0_${release}/bin/ -executable | awk -F/ '{print $7}' | sed ':a;N;$!ba;s/\n/ /g'
@@ -106,8 +111,7 @@ cat << END > $dirName/DEBIAN/postinst
 
 set -e
 
-priority=1055
-#basedir=/usr/lib/jvm/java-$version-openjdk-$arch
+priority=$priority
 basedir=/usr/lib/jvm/$dataDir
 mandir=\$basedir/man
 jdiralias=oracle-1.$version.0-$java-$arch
