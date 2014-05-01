@@ -230,6 +230,7 @@ if [ "\$1" = "remove" ] || [ "\$1" = "deconfigure" ]; then
 	update-alternatives --remove \$i $basedir/bin/\$i
     done
 fi
+sed -i '/JAVA_HOME/d' /etc/profile
 exit 0
 END
 echo -e "done.\n"
