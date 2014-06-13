@@ -116,7 +116,6 @@ cat << END > $dirName/DEBIAN/postinst
 #!/bin/sh
 
 set -e
-
 multiarch=$multiarch
 priority=$priority
 basedir=/usr/lib/jvm/$dataDir
@@ -184,6 +183,16 @@ configure)
 
     ;;
 esac
+##check folders for chrome and firefox      ####
+[ -d "/opt/google/chrome" ] && {
+	mkdir -p /opt/google/chrome/plugins
+	ln -s \$basedir/jre/lib/$arch/libnpjp2.so /opt/google/chrome/plugins/
+}
+[ ! -d "/usr/lib/mozilla/plugins" ] && {
+	mkdir -p /usr/lib/mozilla/plugins
+	ln -s \$basedir/jre/lib/$arch/libnpjp2.so /usr/lib/mozilla/plugins
+}
+##check folders for chrome and firefox done.####
 echo 'export JAVA_HOME=\$(dirname \$(dirname \$(readlink -e \$(which java))))' >> /etc/profile
 
 
@@ -211,8 +220,6 @@ case "\$1" in
 	;;
 esac
 
-
-
 exit 0
 END
 echo -n "done..."
@@ -227,10 +234,12 @@ jdk_tools='$jdktools'
 
 if [ "\$1" = "remove" ] || [ "\$1" = "deconfigure" ]; then
     for i in \$jdk_tools; do
-	update-alternatives --remove \$i $basedir/bin/\$i
+	update-alternatives --remove \$i \$basedir/bin/\$i
     done
 fi
 sed -i '/JAVA_HOME/d' /etc/profile
+[ -h "/opt/google/chrome/plugins/libnpjp2.so" ] && { rm -f /opt/google/chrome/plugins/libnpjp2.so; }
+[ -h "/usr/lib/mozilla/plugins" ] && { rm -f /usr/lib/mozilla/plugins/libnpjp2.so; }
 exit 0
 END
 echo -e "done.\n"
