@@ -40,9 +40,9 @@ shortVersion=$(echo $file | awk -F'-' '{print $(NF-2)}')
 java=$(echo $file | awk -F"-$shortVersion" '{print $1}')
 version=$(echo $shortVersion | awk -F'u' '{print $1}')
 if [ ${version} == "7" ]; then
-   priority=1077
+   priority=20007
 else
-   priority=1088
+   priority=20008
 fi
 release=$(echo $shortVersion | awk -F'u' '{print $2}')
 ARCH=$(echo $file | awk -F'-' '{print $NF}'| sed 's/.tar.gz//')
@@ -76,6 +76,10 @@ echo -e "done.\n"
 #jdktools=$(find $dirName/usr/lib/jvm/${java}1.${version}.0_${release}/bin/ -executable | awk -F/ '{print $7}' | sed ':a;N;$!ba;s/\n/ /g'
 jdktools=$(find $dirName/usr/lib/jvm/$dataDir/bin/ -executable | awk -F/ '{print $7}' | sed ':a;N;$!ba;s/\n/ /g')
 echo -n "${bold}Phase2: preparing required files...${normal}"
+
+####################
+## DEBIAN/control ## 
+####################
 cat << END > $dirName/DEBIAN/control
 Package: oracle-${java}${version}
 Version: 1.${version}u${release}
@@ -110,8 +114,12 @@ Description: Server Java Runtime Environment(Server JRE)
  For deploying Java applications on servers. Includes tools for JVM monitoring and tools commonly required for server applications, but does not include browser integration (the Java plug-in), auto-update, nor an installer.
 END
 fi
-echo -n "done..."
+echo -n "25%..."
 
+
+#####################
+## DEBIAN/postinst ## 
+#####################
 cat << END > $dirName/DEBIAN/postinst
 #!/bin/sh
 
@@ -186,11 +194,11 @@ esac
 ##check folders for chrome and firefox      ####
 [ -d "/opt/google/chrome" ] && {
 	mkdir -p /opt/google/chrome/plugins
-	ln -s \$basedir/jre/lib/$arch/libnpjp2.so /opt/google/chrome/plugins/
+	ln -sf \$basedir/jre/lib/$arch/libnpjp2.so /opt/google/chrome/plugins/ 2>/dev/null
 }
 [ ! -d "/usr/lib/mozilla/plugins" ] && {
 	mkdir -p /usr/lib/mozilla/plugins
-	ln -s \$basedir/jre/lib/$arch/libnpjp2.so /usr/lib/mozilla/plugins
+	ln -sf \$basedir/jre/lib/$arch/libnpjp2.so /usr/lib/mozilla/plugins 2>/dev/null
 }
 ##check folders for chrome and firefox done.####
 echo 'export JAVA_HOME=\$(dirname \$(dirname \$(readlink -e \$(which java))))' >> /etc/profile
@@ -198,14 +206,18 @@ echo 'export JAVA_HOME=\$(dirname \$(dirname \$(readlink -e \$(which java))))' >
 
 exit 0
 END
-echo -n "done..."
+echo -n "50%..."
 
+
+#####################
+## DEBIAN/preinst  ## 
+#####################
+##安裝前檢查若為安裝或升級相同版本，則先移除之。
 cat << END > $dirName/DEBIAN/preinst
 #!/bin/sh
 
 set -e
 
-#multiarch=x86_64-linux-gnu
 old_basedir=/usr/lib/jvm/$dataDir
 jdk_tools='$jdktools'
 case "\$1" in
@@ -222,8 +234,12 @@ esac
 
 exit 0
 END
-echo -n "done..."
+echo -n "75%..."
 
+
+#####################
+## DEBIAN/prerm    ## 
+#####################
 cat << END > $dirName/DEBIAN/prerm
 #!/bin/sh -e
 
@@ -240,13 +256,14 @@ fi
 sed -i '/JAVA_HOME/d' /etc/profile
 [ -h "/opt/google/chrome/plugins/libnpjp2.so" ] && { rm -f /opt/google/chrome/plugins/libnpjp2.so; }
 [ -h "/usr/lib/mozilla/plugins" ] && { rm -f /usr/lib/mozilla/plugins/libnpjp2.so; }
+
 exit 0
 END
-echo -e "done.\n"
+echo -e "100%.\n"
 
 chmod +x $dirName/DEBIAN/*
 
-echo  "${bold}Phase3: making ${dirName}.deb,${normal} this may take a whilst... "
+echo  "${bold}Phase3: making ${dirName}.deb,${normal} this may take a long whilst... "
 sudo dpkg-deb --build $dirName > /dev/null 
 [ $? -eq 0 ] || { echo "exit"; exit 2; }
 sudo chown $(id -un):$(id -gn) $dirName.deb
